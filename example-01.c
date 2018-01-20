@@ -28,7 +28,7 @@
 #include "tiny-json.h"
 
 /* Parser a json string. */
-int main( void ) {
+int example_01 ( void ) {
     char str[] = "{\n"
         "\t\"firstName\": \"Bidhan\",\n"
         "\t\"lastName\": \"Chatterjee\",\n"
@@ -44,47 +44,56 @@ int main( void ) {
         "\t\t{ \"type\": \"fax\", \"number\": \"91-342-2567692\" }\n"
         "\t]\n"
         "}\n";
-    puts( str );
     json_t mem[32];
-    json_t const* json = json_create( str, mem, sizeof mem / sizeof *mem );
+    json_t const* json;    
+    json_t const* firstName;
+    char const* firstNameVal;
+    char const* lastName;
+    json_t const* age;
+    int ageVal;
+    json_t const* phoneList;
+    json_t const* phone;
+    char const* phoneNumber;
+    
+    json = json_create( str, mem, sizeof mem / sizeof *mem );    
+    puts( str );
     if ( !json ) {
         puts("Error json create.");
         return EXIT_FAILURE;
     }
 
-    json_t const* firstName = json_getProperty( json, "firstName" );
+    firstName = json_getProperty( json, "firstName" );
     if ( !firstName || JSON_TEXT != json_getType( firstName ) ) {
         puts("Error, the first name property is not found.");
         return EXIT_FAILURE;
     }
-    char const* firstNameVal = json_getValue( firstName );
+    firstNameVal = json_getValue( firstName );
     printf( "Fist Name: %s.\n", firstNameVal );
 
-    char const* lastName = json_getPropertyValue( json, "lastName" );
+    lastName = json_getPropertyValue( json, "lastName" );
     if ( !lastName ) {
         puts("Error, the last name property is not found.");
         return EXIT_FAILURE;
     }	
     printf( "Last Name: %s.\n", lastName );
 
-    json_t const* age = json_getProperty( json, "age" );
+    age = json_getProperty( json, "age" );
     if ( !age || JSON_INTEGER != json_getType( age ) ) {
         puts("Error, the age property is not found.");
         return EXIT_FAILURE;
     }
-    int const ageVal = (int)json_getInteger( age );
+    ageVal = json_getInteger( age );
     printf( "Age: %d.\n", ageVal );
 
-    json_t const* phoneList = json_getProperty( json, "phoneList" );
+    phoneList = json_getProperty( json, "phoneList" );
     if ( !phoneList || JSON_ARRAY != json_getType( phoneList ) ) {
         puts("Error, the phone list property is not found.");
         return EXIT_FAILURE;
     }
 
-    json_t const* phone;
     for( phone = json_getChild( phoneList ); phone != 0; phone = json_getSibling( phone ) ) {
         if ( JSON_OBJ == json_getType( phone ) ) {
-            char const* phoneNumber = json_getPropertyValue( phone, "number" );
+            phoneNumber = json_getPropertyValue( phone, "number" );
             if ( phoneNumber ) printf( "Number: %s.\n", phoneNumber );
         }
     }

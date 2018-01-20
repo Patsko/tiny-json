@@ -24,8 +24,7 @@
 extern "C" {
 #endif
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "c_compatibility.h"
 #include <stdlib.h>
 
 /** @defgroup tinyJson Tiny JSON parser.
@@ -123,7 +122,7 @@ static inline bool json_getBoolean( json_t const* property ) {
   * @param property A valid handler of a json object. Its type must be JSON_INTEGER.
   * @return The value stdint. */
 static inline int64_t json_getInteger( json_t const* property ) {
-    return (int64_t)atoll( property->u.value );
+    return (int64_t)atol( property->u.value );
 }
 
 /** Get the value of a json real property.

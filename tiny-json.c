@@ -22,8 +22,8 @@
 
 /** Structure to handle a heap of JSON properties. */
 typedef struct jsonPool_s {
-    json_t* const mem;      /**< Pointer to array of json properties.      */
-    unsigned int const qty; /**< Length of the array of json properties.   */
+    json_t* mem;      /**< Pointer to array of json properties.      */
+    unsigned int qty; /**< Length of the array of json properties.   */
     unsigned int nextFree;  /**< The index of the next free json property. */
 } jsonPool_t;
 
@@ -38,9 +38,12 @@ json_t const* json_getProperty( json_t const* obj, char const* property ) {
 
 /* Search a property by its name in a JSON object and return its value. */
 char const* json_getPropertyValue( json_t const* obj, char const* property ) {
-	json_t const* field = json_getProperty( obj, property );
+	json_t const* field;
+	jsonType_t type;
+
+	field = json_getProperty( obj, property );
 	if ( !field ) return 0;
-        jsonType_t type = json_getType( field );
+        type = json_getType( field );
         if ( JSON_ARRAY >= type ) return 0;
 	return json_getValue( field );
 }
@@ -57,10 +60,15 @@ static bool isEndOfPrimitive( char ch );
 
 /* Parse a string to get a json. */
 json_t const* json_create( char* str, json_t mem[], unsigned int qty ) {
-    char* ptr = goBlank( str );
+    char* ptr;
+    jsonPool_t pool;
+    json_t* obj;
+
+    ptr = goBlank( str );
     if ( !ptr || *ptr != '{' ) return 0;
-    jsonPool_t pool = { .mem = mem, .qty = qty };
-    json_t* obj = poolInit( &pool );
+    pool.mem = mem;
+    pool.qty = qty;
+    obj = poolInit( &pool );
     obj->name    = 0;
     obj->sibling = 0;
     obj->u.child = 0;
@@ -256,6 +264,8 @@ static char* fraqValue( char* ptr ) {
   * @retval Pointer to first non white space after the string. If success.
   * @retval Null pointer if any error occur. */
 static char* numValue( char* ptr, json_t* property ) {
+    char const* threshold;
+
     if ( *ptr == '-' ) ++ptr;
     if ( !isNum( *ptr ) ) return 0;
     if ( *ptr != '0' ) {
@@ -286,7 +296,7 @@ static char* numValue( char* ptr, json_t* property ) {
         if ( len == maxdigits ) {
             char const tmp = *ptr;
             *ptr = '\0';
-            char const* const threshold = negative ? min: max;
+            threshold = negative ? min: max;
             if ( 0 > strcmp( threshold, value ) ) return 0;
             *ptr = tmp;
         }
@@ -314,6 +324,10 @@ static void add( json_t* obj, json_t* property ) {
   * @retval Pointer to first character after the value. If success.
   * @retval Null pointer if any error occur. */
 static char* objValue( char* ptr, json_t* obj, jsonPool_t* pool ) {
+    char endchar;
+    json_t* property;
+    json_t* parentObj;
+
     obj->type    = JSON_OBJ;
     obj->u.child = 0;
     obj->sibling = 0;
@@ -325,17 +339,17 @@ static char* objValue( char* ptr, json_t* obj, jsonPool_t* pool ) {
             ++ptr;
             continue;
         }
-        char const endchar = ( obj->type == JSON_OBJ )? '}': ']';
+        endchar = ( obj->type == JSON_OBJ )? '}': ']';
         if ( *ptr == endchar ) {
             *ptr = '\0';
-            json_t* parentObj = obj->sibling;
+            parentObj = obj->sibling;
             if ( !parentObj ) return ++ptr;
             obj->sibling = 0;
             obj = parentObj;
             ++ptr;
             continue;
         }
-        json_t* property = poolNew( pool );
+        property = poolNew( pool );
         if ( !property ) return 0;
         if( obj->type != JSON_ARRAY ) {
             if ( *ptr != '\"' ) return 0;

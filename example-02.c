@@ -49,8 +49,15 @@ static char const* getJsonTypeName( jsonType_t type ) {
 /** Print the value os a json object or array.
   * @param json The handler of the json object or array. */
 static void dump( json_t const* json ) {
+    jsonType_t  type;
+    json_t* child;
+    char* name;
+    char* value;
+    bool text;
+    char* fmt;
+    bool last;
 
-    jsonType_t const type = json_getType( json );
+    type = json_getType( json );
     if ( type != JSON_OBJ && type != JSON_ARRAY ) {
         puts("error");
         return;
@@ -58,23 +65,22 @@ static void dump( json_t const* json ) {
 
     printf( "%s", type == JSON_OBJ? " {": " [" );
 
-    json_t const* child;
     for( child = json_getChild( json ); child != 0; child = json_getSibling( child ) ) {
 
         jsonType_t propertyType = json_getType( child );
-        char const* name = json_getName( child );
+        name = json_getName( child );
         if ( name ) printf(" \"%s\": ", name );
 
         if ( propertyType == JSON_OBJ || propertyType == JSON_ARRAY )
             dump( child );
 
         else {
-            char const* value = json_getValue( child );
+            value = json_getValue( child );
             if ( value ) {
-                bool const text = JSON_TEXT == json_getType( child );
-                char const* fmt = text? " \"%s\"": " %s";
+                text = JSON_TEXT == json_getType( child );
+                fmt = text? " \"%s\"": " %s";
                 printf( fmt, value );
-                bool const last = !json_getSibling( child );
+                last = !json_getSibling( child );
                 if ( !last ) putchar(',');
             }
         }
@@ -85,7 +91,7 @@ static void dump( json_t const* json ) {
 }
 
 /* Parser a json string. */
-int main( void ) {
+int example_02 ( void ) {
     char str[] = "{\n"
         "\t\"firstName\": \"Bidhan\",\n"
         "\t\"lastName\": \"Chatterjee\",\n"
@@ -101,9 +107,12 @@ int main( void ) {
         "\t\t{ \"type\": \"fax\", \"number\": \"91-342-2567692\" }\n"
         "\t]\n"
         "}\n";
-    puts( str );
     json_t mem[32];
-    json_t const* json = json_create( str, mem, sizeof mem / sizeof *mem );
+    json_t const* json;
+
+
+    puts( str );
+    json = json_create( str, mem, sizeof mem / sizeof *mem );
     if ( !json ) {
         puts("Error json create.");
         return EXIT_FAILURE;
