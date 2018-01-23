@@ -48,6 +48,53 @@ char const* json_getPropertyValue( json_t const* obj, char const* property ) {
 	return json_getValue( field );
 }
 
+/** Get the name of a json property. */
+inline char const* json_getName( json_t const* json ) {
+    return json->name;
+}
+
+/** Get the value of a json property. */
+inline char const* json_getValue( json_t const* property ) {
+    return property->u.value;
+}
+
+/** Get the type of a json property. */
+inline jsonType_t json_getType( json_t const* json ) {
+    return json->type;
+}
+
+/** Get the next sibling of a JSON property that is within a JSON object or array. */
+inline json_t const* json_getSibling( json_t const* json ) {
+    return json->sibling;
+}
+
+/** Get the first property of a JSON object or array.  */
+inline json_t const* json_getChild( json_t const* json ) {
+    return json->u.child;
+}
+
+/** Get the value of a json boolean property. */
+inline bool json_getBoolean( json_t const* property ) {
+    return *property->u.value == 't';
+}
+
+/** Get the value of a json integer property. */
+#if TINYJSON_USE_LONG_LONG_INTEGER
+inline int64_t json_getInteger( json_t const* property ) {
+    return (int64_t)atoll( property->u.value );
+}
+#else
+inline int32_t json_getInteger( json_t const* property ) {
+    return (int32_t)atol( property->u.value );
+}
+#endif
+
+/** Get the value of a json real property. */
+inline double json_getReal( json_t const* property ) {
+    return atof( property->u.value );
+}
+
+
 /* Internal prototypes: */
 static char* goBlank( char* str );
 static bool isNum( unsigned char ch );
@@ -288,8 +335,13 @@ static char* numValue( char* ptr, json_t* property ) {
     if ( JSON_INTEGER == property->type ) {
         char const* value = property->u.value;
         bool const negative = *value == '-';
+#if TINYJSON_USE_LONG_LONG_INTEGER
         static char const min[] = "-9223372036854775808";
         static char const max[] = "9223372036854775807";
+#else
+        static char const min[] = "−2147483647";
+        static char const max[] = "2147483647";
+#endif
         unsigned int const maxdigits = ( negative? sizeof min: sizeof max ) - 1;
         unsigned int const len = ptr - value;
         if ( len > maxdigits ) return 0;
