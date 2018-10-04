@@ -1,23 +1,34 @@
 
 /*
- * Developed by Rafa Garcia <rafagarcia77@gmail.com>
- *
- * tiny-json.c is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * tiny-json.c is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with tiny-json.c.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+
+<https://github.com/rafagafe/tiny-json>
+     
+  Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+  SPDX-License-Identifier: MIT
+  Copyright (c) 2016-2018 Rafa Garcia <rafagarcia77@gmail.com>.
+
+  Permission is hereby  granted, free of charge, to any  person obtaining a copy
+  of this software and associated  documentation files (the "Software"), to deal
+  in the Software  without restriction, including without  limitation the rights
+  to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+  copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+  IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+  FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+  AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+  LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+    
+*/
 
 #include <string.h>
+#include <ctype.h>
 #include "tiny-json.h"
 
 /** Structure to handle a heap of JSON properties. */
@@ -30,7 +41,7 @@ typedef struct jsonPool_s {
 /* Search a property by its name in a JSON object. */
 json_t const* json_getProperty( json_t const* obj, char const* property ) {
     json_t const* sibling;
-    for( sibling = obj->u.child; sibling; sibling = sibling->sibling )
+    for( sibling = obj->u.c.child; sibling; sibling = sibling->sibling )
         if ( sibling->name && !strcmp( sibling->name, property ) )
             return sibling;
     return 0;
@@ -47,7 +58,6 @@ char const* json_getPropertyValue( json_t const* obj, char const* property ) {
 
 /* Internal prototypes: */
 static char* goBlank( char* str );
-static bool isNum( unsigned char ch );
 static char* goNum( char* str );
 static json_t* poolInit( jsonPool_t* pool );
 static json_t* poolNew( jsonPool_t* pool );
@@ -63,7 +73,7 @@ json_t const* json_create( char* str, json_t mem[], unsigned int qty ) {
     json_t* obj = poolInit( &pool );
     obj->name    = 0;
     obj->sibling = 0;
-    obj->u.child = 0;
+    obj->u.c.child = 0;
     ptr = objValue( ptr, obj, &pool );
     if ( !ptr ) return 0;
     return obj;
@@ -87,25 +97,14 @@ static char getEscape( char ch ) {
     return '\0';
 }
 
-/** Check if a character is a hexadecimal digit. */
-static bool isHexaDigit( unsigned char nibble ) {
-    if ( nibble <  '0' ) return false;
-    if ( nibble <= '9' ) return true;
-    if ( nibble <  'A' ) return false;
-    if ( nibble <= 'F' ) return true;
-    if ( nibble <  'a' ) return false;
-    if ( nibble <= 'f' ) return true;
-    return false;
-}
-
 /** Parse 4 characters.
   * @Param str Pointer to  first digit.
   * @retval '?' If the four characters are hexadecimal digits.
   * @retcal '\0' In other cases. */
-static char getCharFromUnicode( char const* str ) {
+static unsigned char getCharFromUnicode( unsigned char const* str ) {
     unsigned int i;
     for( i = 0; i < 4; ++i )
-        if ( !isHexaDigit( str[i] ) )
+        if ( !isxdigit( str[i] ) )
             return '\0';
     return '?';
 }
@@ -116,12 +115,12 @@ static char getCharFromUnicode( char const* str ) {
   * @retval Pointer to first non white space after the string. If success.
   * @retval Null pointer if any error occur. */
 static char* parseString( char* str ) {
-    char* head = str;
-    char* tail = str;
+    unsigned char* head = (unsigned char*)str;
+    unsigned char* tail = (unsigned char*)str;
     for( ; *head >= ' '; ++head, ++tail ) {
         if ( *head == '\"' ) {
             *tail = '\0';
-            return ++head;
+            return (char*)++head;
         }
         if ( *head == '\\' ) {
             if ( *++head == 'u' ) {
@@ -233,7 +232,7 @@ static char* nullValue( char* ptr, json_t* property ) {
   * @retval Null pointer if any error occur. */
 static char* expValue( char* ptr ) {
     if ( *ptr == '-' || *ptr == '+' ) ++ptr;
-    if ( !isNum( *ptr ) ) return 0;
+    if ( !isdigit( *ptr ) ) return 0;
     ptr = goNum( ++ptr );
     return ptr;
 }
@@ -243,7 +242,7 @@ static char* expValue( char* ptr ) {
   * @retval Pointer to first non numerical after the string. If success.
   * @retval Null pointer if any error occur. */
 static char* fraqValue( char* ptr ) {
-    if ( !isNum( *ptr ) ) return 0;
+    if ( !isdigit( *ptr ) ) return 0;
     ptr = goNum( ++ptr );
     if ( !ptr ) return 0;
     return ptr;
@@ -257,12 +256,12 @@ static char* fraqValue( char* ptr ) {
   * @retval Null pointer if any error occur. */
 static char* numValue( char* ptr, json_t* property ) {
     if ( *ptr == '-' ) ++ptr;
-    if ( !isNum( *ptr ) ) return 0;
+    if ( !isdigit( *ptr ) ) return 0;
     if ( *ptr != '0' ) {
         ptr = goNum( ptr );
         if ( !ptr ) return 0;
     }
-    else if ( isNum( *++ptr ) ) return 0;
+    else if ( isdigit( *++ptr ) ) return 0;
     property->type = JSON_INTEGER;
     if ( *ptr == '.' ) {
         ptr = fraqValue( ++ptr );
@@ -300,11 +299,12 @@ static char* numValue( char* ptr, json_t* property ) {
   * @param property The handler of the property to be added. */
 static void add( json_t* obj, json_t* property ) {
     property->sibling = 0;
-    if ( !obj->u.child ) obj->u.child = property;
-    else {
-        json_t* iter;
-        for( iter = obj->u.child; iter->sibling; iter = iter->sibling );
-        iter->sibling = property;
+    if ( !obj->u.c.child ){
+	    obj->u.c.child = property;
+	    obj->u.c.last_child = property;
+    } else {
+	    obj->u.c.last_child->sibling = property;
+	    obj->u.c.last_child = property;
     }
 }
 
@@ -315,7 +315,7 @@ static void add( json_t* obj, json_t* property ) {
   * @retval Null pointer if any error occur. */
 static char* objValue( char* ptr, json_t* obj, jsonPool_t* pool ) {
     obj->type    = JSON_OBJ;
-    obj->u.child = 0;
+    obj->u.c.child = 0;
     obj->sibling = 0;
     ptr++;
     for(;;) {
@@ -348,14 +348,14 @@ static char* objValue( char* ptr, json_t* obj, jsonPool_t* pool ) {
         switch( *ptr ) {
             case '{':
                 property->type    = JSON_OBJ;
-                property->u.child = 0;
+                property->u.c.child = 0;
                 property->sibling = obj;
                 obj = property;
                 ++ptr;
                 break;
             case '[':
                 property->type    = JSON_ARRAY;
-                property->u.child = 0;
+                property->u.c.child = 0;
                 property->sibling = obj;
                 obj = property;
                 ++ptr;
@@ -420,17 +420,12 @@ static char* goBlank( char* str ) {
     return goWhile( str, blank );
 }
 
-/** Checks if a character is a decimal digit. */
-static bool isNum( unsigned char ch ) {
-    return ch >= '0' && ch <= '9';
-}
-
 /** Increases a pointer while it points to a decimal digit character.
   * @param str The initial pointer value.
   * @return The final pointer value or null pointer if the null character was found. */
 static char* goNum( char* str ) {
     for( ; *str != '\0'; ++str ) {
-        if ( !isNum( *str ) )
+        if ( !isdigit( *str ) )
             return str;
     }
     return 0;

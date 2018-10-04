@@ -1,21 +1,31 @@
 
 /*
- * Developed by Rafa Garcia <rafagarcia77@gmail.com>
- *
- * example-02.c is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * example-02.c is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with example-02.c.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+
+<https://github.com/rafagafe/tiny-json>
+     
+  Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+  SPDX-License-Identifier: MIT
+  Copyright (c) 2016-2018 Rafa Garcia <rafagarcia77@gmail.com>.
+
+  Permission is hereby  granted, free of charge, to any  person obtaining a copy
+  of this software and associated  documentation files (the "Software"), to deal
+  in the Software  without restriction, including without  limitation the rights
+  to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+  copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+  IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+  FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+  AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+  LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+    
+*/
 
 /*
  * In this example the JSON library is used to scan an object that nothing is
@@ -26,25 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "tiny-json.h"
-
-/** Get the name of a json type code.
-  * @param type the json type code.
-  * @return A null-terminated string with the name. */
-static char const* getJsonTypeName( jsonType_t type ) {
-    static struct { jsonType_t type; char const* name; } const pair[] = {
-        { JSON_OBJ,     "object"  },
-        { JSON_TEXT,    "text"    },
-        { JSON_BOOLEAN, "boolean" },
-        { JSON_INTEGER, "integer" },
-        { JSON_NULL,    "null"    },
-        { JSON_ARRAY,   "array"   },
-    };
-    unsigned int i;
-    for( i = 0; i < sizeof pair / sizeof *pair; ++i )
-        if ( pair[i].type == type )
-            return pair[i].name;
-    return "Unknown";
-}
 
 /** Print the value os a json object or array.
   * @param json The handler of the json object or array. */

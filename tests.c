@@ -1,20 +1,31 @@
+
 /*
- * Developed by Rafa Garcia <rafagarcia77@gmail.com>
- *
- * tests.c is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * tiny-json.h is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with tests.c.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
+
+<https://github.com/rafagafe/tiny-json>
+     
+  Licensed under the MIT License <http://opensource.org/licenses/MIT>.
+  SPDX-License-Identifier: MIT
+  Copyright (c) 2016-2018 Rafa Garcia <rafagarcia77@gmail.com>.
+
+  Permission is hereby  granted, free of charge, to any  person obtaining a copy
+  of this software and associated  documentation files (the "Software"), to deal
+  in the Software  without restriction, including without  limitation the rights
+  to  use, copy,  modify, merge,  publish, distribute,  sublicense, and/or  sell
+  copies  of  the Software,  and  to  permit persons  to  whom  the Software  is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE  IS PROVIDED "AS  IS", WITHOUT WARRANTY  OF ANY KIND,  EXPRESS OR
+  IMPLIED,  INCLUDING BUT  NOT  LIMITED TO  THE  WARRANTIES OF  MERCHANTABILITY,
+  FITNESS FOR  A PARTICULAR PURPOSE AND  NONINFRINGEMENT. IN NO EVENT  SHALL THE
+  AUTHORS  OR COPYRIGHT  HOLDERS  BE  LIABLE FOR  ANY  CLAIM,  DAMAGES OR  OTHER
+  LIABILITY, WHETHER IN AN ACTION OF  CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE  OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+    
+*/
 
 #include <stdio.h>
 #include <string.h>
@@ -22,10 +33,41 @@
 #include <stdint.h>
 #include "tiny-json.h"
 
+
+
+// ----------------------------------------------------- Test "framework": ---
+
 #define done() return 0
 #define fail() return __LINE__
-static unsigned int checkqty = 0;
+static int checkqty = 0;
 #define check( x ) do { ++checkqty; if (!(x)) fail(); } while ( 0 )
+
+struct test {
+    int(*func)(void);
+    char const* name;
+};
+
+static int test_suit( struct test const* tests, int numtests ) {
+    printf( "%s", "\n\nTests:\n" );
+    int failed = 0;
+    for( int i = 0; i < numtests; ++i ) {
+        printf( " %02d%s%-25s ", i, ": ", tests[i].name );
+        int linerr = tests[i].func();
+        if ( 0 == linerr )
+            printf( "%s", "OK\n" );
+        else {
+            printf( "%s%d\n", "Failed, line: ", linerr );
+            ++failed;
+        }
+    }
+    printf( "\n%s%d\n", "Total checks: ", checkqty );
+    printf( "%s[ %d / %d ]\r\n\n\n", "Tests PASS: ", numtests - failed, numtests );
+    return failed;
+}
+
+
+
+// ----------------------------------------------------------- Unit tests: ---
 
 static int empty( void ) {
     json_t pool[6];
@@ -134,19 +176,37 @@ static int primitive( void ) {
 }
 
 static int text( void ) {
-    json_t pool[2];
-    unsigned const qty = sizeof pool / sizeof *pool;
+    
+    {
+        json_t pool[2];
+        unsigned const qty = sizeof pool / sizeof *pool;
 
-    char str[] = "{\"a\":\"\\tThis text: \\\"Hello\\\".\\n\"}";
+        char str[] = "{\"a\":\"\\tThis text: \\\"Hello\\\".\\n\"}";
 
-    json_t const* json = json_create( str, pool, qty );
-    check( json );
+        json_t const* json = json_create( str, pool, qty );
+        check( json );
 
-    json_t const* a = json_getProperty( json, "a" );
-    check( a );
-    check( JSON_TEXT == json_getType( a ) );
-    check( !strcmp( "\tThis text: \"Hello\".\n", json_getValue( a ) ) );
+        json_t const* a = json_getProperty( json, "a" );
+        check( a );
+        check( JSON_TEXT == json_getType( a ) );
+        check( !strcmp( "\tThis text: \"Hello\".\n", json_getValue( a ) ) );
+    }
+    
+    {
+        json_t pool[2];
+        unsigned const qty = sizeof pool / sizeof *pool;
+        
+        char str[] = "{\"name\":\"Christiane Eluère\"}";
+        
+        json_t const* json = json_create( str, pool, qty );
+        check( json );
 
+        json_t const* name = json_getProperty( json, "name" );
+        check( name );
+        check( JSON_TEXT == json_getType( name ) );
+        check( !strcmp( "Christiane Eluère", json_getValue( name ) ) );
+        
+    }
 
     done();
 }
@@ -303,35 +363,17 @@ int badformat( void ) {
     done();
 }
 
-struct test {
-    int(*func)(void);
-    char const* name;
-};
 
-static int test_exec( struct test const* test ) {
-    int const err = test->func();
-    if ( err ) {
-        fprintf( stderr, "%s%s%s%d%s", "Failed test: '", test->name, "' Line: ", err, ".\n" );
-        return 1;
-    }
-    return 0;
-}
-
-static struct test const tests[] = {
-    { empty,       "Empty object and array" },
-    { primitive,   "Primitive properties"   },
-    { text,        "Text"                   },
-    { array,       "Array"                  },
-    { badformat,   "Bad format"             },
-    { goodformats, "Formats"                },
-};
+// --------------------------------------------------------- Execute tests: ---
 
 int main( void ) {
-    int failed = 0;
-    unsigned int const qty = sizeof tests / sizeof *tests;
-    for( unsigned int i = 0; i < qty; ++i )
-        failed += test_exec( tests + i );
-    unsigned int const percent = 100.0 * ( qty - failed ) / qty;
-    printf( "%d%s%d%s", percent, "%. ", checkqty, " checks.\n" );
-    return failed;
+    static struct test const tests[] = {
+        { empty,       "Empty object and array" },
+        { primitive,   "Primitive properties"   },
+        { text,        "Text"                   },
+        { array,       "Array"                  },
+        { badformat,   "Bad format"             },
+        { goodformats, "Formats"                },
+    };
+    return test_suit( tests, sizeof tests / sizeof *tests );
 }
